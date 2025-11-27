@@ -91,7 +91,7 @@ namespace LocomotionTest.Movement
         private Vector3 _hitPos;
         private float _sphereRadius;
 
-        [Header("Ray Debugging")]
+        [Space]
         /// <summary> Will display both the current and last velocity for the body. </summary>
         public bool _debugVelocity = true;
 
@@ -199,12 +199,6 @@ namespace LocomotionTest.Movement
 
             velocityHistory[velocityIndex] = currentVelocity;
             lastPosition = transform.position;
-
-            if (_debugVelocity)
-            {
-                Debug.DrawLine(transform.position, transform.position + currentVelocity, Color.magenta, 0f, false);
-                Debug.DrawLine(transform.position, transform.position + oldestVelocity, Color.yellow, 0f, false);
-            }
         }
 
         private void UpdateBodyVelocity()
@@ -481,6 +475,12 @@ namespace LocomotionTest.Movement
             {
                 Gizmos.color = Color.magenta;
                 Gizmos.DrawSphere(lastHandCollided.lastHandPosition, handRadius * 1.2f);
+            }
+
+            if (_debugVelocity && Application.isPlaying && velocityHistory.Length > 0)
+            {
+                Debug.DrawLine(transform.position, transform.position + currentVelocity, Color.magenta, 0f, false);
+                Debug.DrawLine(transform.position, transform.position + velocityHistory[velocityIndex--], Color.yellow, 0f, false);
             }
         }
 
