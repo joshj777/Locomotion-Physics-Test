@@ -58,6 +58,7 @@ namespace LocomotionTest.Movement
                 }
 
                 movementController.GetRigidbody().linearVelocity = Vector3.zero;
+
                 handColliding = true;
             }
         }

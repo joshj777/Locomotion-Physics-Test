@@ -14,6 +14,9 @@ namespace LocomotionTest.Movement
         [SerializeField] private HandController leftController;
         [SerializeField] private HandController rightController;
 
+        [Space]
+        [SerializeField] private GameplayTimer gameplayTimer;
+
         [Header("Components")]
         [SerializeField] private Rigidbody bodyRigidbody;
         [SerializeField] private CapsuleCollider bodyCollider;
@@ -29,6 +32,9 @@ namespace LocomotionTest.Movement
 
         [Space]
         public float handRadius = 0.15f;
+        public float headRadius = 0.2f;
+
+        [Space]
         public float defaultPrecision = 0.995f;
 
         [Space]
@@ -73,6 +79,7 @@ namespace LocomotionTest.Movement
         public HandController lastHandCollided { get; private set; }
 
         [Header("Debugging")]
+        public bool _finalizedHandPosition;
 
         [Header("Gizmos Debugging")]
         public bool _drawGizmos = true;
@@ -120,10 +127,14 @@ namespace LocomotionTest.Movement
         #endregion Runtime Methods
 
         #region Update
-        private void FixedUpdate()
+        private void Update()
         {
             ///This is necessary for updating Gizmos debugging.
             ResetGizmzoDebugProperties();
+
+            gameplayTimer.UpdateTick(Time.deltaTime);
+            if (!gameplayTimer.ShouldTick())
+                return;
 
             ///SECTION 1: Hand Movement
             leftController.UpdateHandIteration(out Vector3 leftHandMovement, out bool leftHandColliding);
@@ -181,10 +192,10 @@ namespace LocomotionTest.Movement
             rightController.wasHandTouching = rightHandColliding;
         }
 
-        private void Update()
+        /*private void Update()
         {
             RunGameDebugCode();
-        }
+        }*/
 
         #endregion Update
 
@@ -199,6 +210,14 @@ namespace LocomotionTest.Movement
 
             velocityHistory[velocityIndex] = currentVelocity;
             lastPosition = transform.position;
+
+            //DEBUGGING
+            if (_debugVelocity && Application.isPlaying && velocityHistory.Length > 0)
+            {
+                Vector3 origin = headCollider.transform.position;
+                Debug.DrawLine(origin, origin + currentVelocity, Color.magenta, 0f, false);
+                Debug.DrawLine(origin, origin + oldestVelocity, Color.yellow, 0f, false);
+            }
         }
 
         private void UpdateBodyVelocity()
@@ -234,13 +253,15 @@ namespace LocomotionTest.Movement
             Vector3 lastHandPosition = controller.lastHandPosition;
             handColliding = false;
 
-            Vector3 distanceTraveled = handPosition - (offset.normalized * 0.01f) - lastHandPosition;
-            Debug.DrawLine(handPosition, handPosition + (distanceTraveled.normalized * 2), Color.green, 0f);
+            Vector3 distanceTraveled = handPosition - (offset) - lastHandPosition;
+            Debug.DrawLine(handPosition, handPosition + (distanceTraveled.normalized * 1), Color.green, 0f);
 
             if (IterativeCollisionSphereCast(lastHandPosition, handRadius, distanceTraveled, defaultPrecision, out Vector3 finalPosition, out RaycastHit hitInfo, singleHand))
             {
                 controller.lastHandPosition = finalPosition;
                 handColliding = true;
+
+                _finalizedHandPosition = true;
             }
             else
             {
@@ -275,7 +296,7 @@ namespace LocomotionTest.Movement
             Vector3 direction = headCollider.transform.position + rigidBodyMovement - headCollider.transform.position;
             newBodyMovement = rigidBodyMovement;
 
-            if (IterativeCollisionSphereCast(lastHeadPosition, headCollider.radius, direction, defaultPrecision, out Vector3 hitPos, out RaycastHit hitInfo, false))
+            if (IterativeCollisionSphereCast(lastHeadPosition, headRadius, direction, defaultPrecision, out Vector3 hitPos, out RaycastHit hitInfo, false))
             {
                 newBodyMovement = hitPos - lastHeadPosition;
 
@@ -414,6 +435,8 @@ namespace LocomotionTest.Movement
                 _hitPos = Vector3.zero;
                 _sphereRadius = 0;
             }
+
+            _finalizedHandPosition = false;
         }
 
         public void OnDrawGizmos()
@@ -477,11 +500,7 @@ namespace LocomotionTest.Movement
                 Gizmos.DrawSphere(lastHandCollided.lastHandPosition, handRadius * 1.2f);
             }
 
-            if (_debugVelocity && Application.isPlaying && velocityHistory.Length > 0)
-            {
-                Debug.DrawLine(transform.position, transform.position + currentVelocity, Color.magenta, 0f, false);
-                Debug.DrawLine(transform.position, transform.position + velocityHistory[velocityIndex--], Color.yellow, 0f, false);
-            }
+            
         }
 
         #endregion Debug
