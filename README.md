@@ -1,0 +1,1 @@
+This is the first instance of the locomotion system. This system consists of the physics behind the locomotion and not the actual code behind the VR controller setup. I hope the code isn't too messy and that it's a good first iteration.
